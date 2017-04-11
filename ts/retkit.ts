@@ -153,7 +153,7 @@ namespace Retkit {
         public constructor(width: number, height: number, scale: number) {
             this.canvas = document.createElement('canvas');
 
-            this.renderer = new Renderer(this.canvas.getContext('webgl'));
+            this.renderer = new Renderer(this.canvas.getContext('webgl', { antialias: false }));
 
             this.resize(width, height, scale);
         }
@@ -666,9 +666,10 @@ void main() {
         retkitBatch.usedIndices = 0;
 
         let sprof = (~~(timer * 10) & 1) * 0.25;
+        let sprof2 = (~~(timer * 6) & 1) * 0.25;
 
         retkitBatch.addQuad(0, 64 - Math.abs(Math.sin(timer * 5)) * 32, 32, 32, sprof, 0, sprof + .25, .25, 1, 1, 1);
-        retkitBatch.addQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof + .25, 0, sprof, .25, 0.2, 1.2, 0.1);
+        retkitBatch.addQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof2 + .25, 0, sprof2, .25, 0.2, 1.2, 0.1);
 
         retkitRenderer.flushBatch(retkitBatch);
 
