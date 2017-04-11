@@ -209,7 +209,7 @@ namespace Retkit {
         }
 
         public enableAlphaBlending() {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -217,7 +217,7 @@ namespace Retkit {
 
         public bindTexture(texture: WebGLTexture);
         public bindTexture(texture: Renderer.Texture) {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let glTexture: WebGLTexture;
 
@@ -236,7 +236,7 @@ namespace Retkit {
 
         public bindFramebuffer(framebuffer: WebGLFramebuffer);
         public bindFramebuffer(framebuffer: Renderer.Framebuffer) {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let glFramebuffer: WebGLFramebuffer;
 
@@ -255,7 +255,7 @@ namespace Retkit {
 
         public bindProgram(program: WebGLProgram);
         public bindProgram(program: Renderer.Program) {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let glProgram: WebGLProgram;
 
@@ -273,7 +273,7 @@ namespace Retkit {
         }
 
         public enableProgramVertexAttributes(program: Renderer.Program) {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let location = 0;
 
@@ -312,7 +312,7 @@ namespace Retkit {
         }
 
         public buildProgramFromSources(vertexSource: string, fragmentSource: string): Renderer.Program {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let program = gl.createProgram();
 
@@ -356,7 +356,7 @@ namespace Retkit {
         }
 
         private compileShaderFromSource(source: string, type: number): WebGLShader {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let shader = gl.createShader(type);
 
@@ -375,7 +375,7 @@ namespace Retkit {
         }
 
         public buildFramebuffer(width, height): Renderer.Framebuffer {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let framebuffer = gl.createFramebuffer();
 
@@ -406,7 +406,7 @@ namespace Retkit {
         }
 
         public buildTextureFromSource(source): Renderer.Texture {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let texture = gl.createTexture();
 
@@ -430,7 +430,7 @@ namespace Retkit {
         }
 
         public buildBatch(length): Renderer.Batch {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             let vertices = new Float32Array(length * 4 * Renderer.Batch.ATTRIBUTES_LENGTH);
 
@@ -456,14 +456,14 @@ namespace Retkit {
         }
 
         public flushBatch(batch: Renderer.Batch) {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             gl.bindBuffer(gl.ARRAY_BUFFER, batch.vertexBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, batch.vertices, gl.DYNAMIC_DRAW);
         }
 
         public drawBatch(batch: Renderer.Batch, program: Renderer.Program, framebuffer: Renderer.Framebuffer, texture: Renderer.Texture) {
-            let gl = this.webGLContext;
+            let gl = this.gl;
 
             this.bindProgram(program);
 
