@@ -84,7 +84,8 @@ namespace Retkit {
 
             public getTile(x, y) {
                 if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
-                    throw new Error('Tile location out of room bounds');
+                    console.error('Tile location out of room bounds');
+                    return;
                 }
 
                 return this.tiles[x][y];
@@ -92,7 +93,8 @@ namespace Retkit {
 
             public setTile(x, y, tile) {
                 if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
-                    throw new Error('Tile location out of room bounds');
+                    console.error('Tile location out of room bounds');
+                    return;
                 }
 
                 this.tiles[x][y] = tile;
@@ -215,17 +217,10 @@ namespace Retkit {
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
         }
 
-        public bindTexture(texture: WebGLTexture);
         public bindTexture(texture: Renderer.Texture) {
             let gl = this.gl;
 
-            let glTexture: WebGLTexture;
-
-            if (texture instanceof Renderer.Texture) {
-                glTexture = texture.glTexture;
-            } else {
-                glTexture = texture;
-            }
+            let glTexture: WebGLTexture = texture.glTexture;
 
             if (glTexture !== this.boundTexture) {
                 this.boundTexture = glTexture;
@@ -234,17 +229,10 @@ namespace Retkit {
             }
         }
 
-        public bindFramebuffer(framebuffer: WebGLFramebuffer);
         public bindFramebuffer(framebuffer: Renderer.Framebuffer) {
             let gl = this.gl;
 
-            let glFramebuffer: WebGLFramebuffer;
-
-            if (framebuffer instanceof Renderer.Framebuffer) {
-                glFramebuffer = framebuffer.glFramebuffer;
-            } else {
-                glFramebuffer = framebuffer;
-            }
+            let glFramebuffer: WebGLFramebuffer = framebuffer.glFramebuffer;
 
             if (glFramebuffer !== this.boundFramebuffer) {
                 this.boundFramebuffer = glFramebuffer;
@@ -253,22 +241,44 @@ namespace Retkit {
             }
         }
 
-        public bindProgram(program: WebGLProgram);
         public bindProgram(program: Renderer.Program) {
             let gl = this.gl;
 
-            let glProgram: WebGLProgram;
-
-            if (program instanceof Renderer.Program) {
-                glProgram = program.glProgram;
-            } else {
-                glProgram = program;
-            }
+            let glProgram: WebGLProgram = program.glProgram;
 
             if (glProgram !== this.boundProgram) {
                 this.boundProgram = glProgram;
 
                 gl.useProgram(glProgram);
+            }
+        }
+
+        public setProgramUniform(program: Renderer.Program, uniform: Renderer.Uniform, value: any) {
+            let gl = this.gl;
+
+            let glProgram: WebGLProgram = program.glProgram;
+            let glUniformLocation: WebGLUniformLocation = uniform.location;
+            let glUniformType: number = uniform.type;
+
+            switch (glUniformType) {
+                case gl.FLOAT_VEC2:
+                    gl.uniform2fv(glUniformLocation, value);
+                    break;
+                case gl.FLOAT_VEC3:
+                    gl.uniform3fv(glUniformLocation, value);
+                    break;
+                case gl.FLOAT_VEC4:
+                    gl.uniform4fv(glUniformLocation, value);
+                    break;
+                case gl.FLOAT_MAT3:
+                    gl.uniformMatrix3fv(glUniformLocation, false, value);
+                    break;
+                case gl.FLOAT_MAT4:
+                    gl.uniformMatrix4fv(glUniformLocation, false, value);
+                    break;
+                case gl.SAMPLER_2D:
+                    gl.uniform1i(glUniformLocation, value);
+                    break;
             }
         }
 
@@ -379,11 +389,11 @@ namespace Retkit {
 
             let framebuffer = gl.createFramebuffer();
 
-            this.bindFramebuffer(framebuffer);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 
             let texture = gl.createTexture();
 
-            this.bindTexture(texture);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
 
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
