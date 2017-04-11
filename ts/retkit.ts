@@ -232,7 +232,11 @@ namespace Retkit {
         public bindFramebuffer(framebuffer: Renderer.Framebuffer) {
             let gl = this.gl;
 
-            let glFramebuffer: WebGLFramebuffer = framebuffer.glFramebuffer;
+            let glFramebuffer: WebGLFramebuffer
+
+            if (framebuffer) {
+                glFramebuffer = framebuffer.glFramebuffer;
+            }
 
             if (glFramebuffer !== this.boundFramebuffer) {
                 this.boundFramebuffer = glFramebuffer;
@@ -253,10 +257,9 @@ namespace Retkit {
             }
         }
 
-        public setProgramUniform(program: Renderer.Program, uniform: Renderer.Uniform, value: any) {
+        public setProgramUniform(uniform: Renderer.Uniform, value: any) {
             let gl = this.gl;
 
-            let glProgram: WebGLProgram = program.glProgram;
             let glUniformLocation: WebGLUniformLocation = uniform.location;
             let glUniformType: number = uniform.type;
 
@@ -647,13 +650,9 @@ void main() {
 
     retkitRenderer.bindProgram(retkitProgram);
 
-    for (let uniform in retkitProgram.uniforms) {
-        console.log(uniform, retkitProgram.uniforms[uniform]);
-    }
-
     window['gl'] = retkitRenderer.gl;
 
-    retkitRenderer.gl.uniformMatrix4fv(retkitProgram.uniforms['u_Matrix'].location, false, [0.00625, 0, 0, 0, 0, -0.01, 0, 0, 0, 0, -1, 0, -1, 1, -0, 1]);
+    retkitRenderer.setProgramUniform(retkitProgram.uniforms['u_Matrix'], [0.00625, 0, 0, 0, 0, -0.01, 0, 0, 0, 0, -1, 0, -1, 1, -0, 1]);
 
     retkitRenderer.enableAlphaBlending();
 
