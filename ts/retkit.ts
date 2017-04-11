@@ -31,27 +31,45 @@ namespace Retkit {
     }
 
     export namespace Game {
-        export class Prop {
-            public readonly position: Symbols.Vector2;
+        export class Entity {
+            public readonly position: Vector2;
+            public readonly size: Vector2;
+
+            public constructor(position, size) {
+                this.position = position;
+                this.size = size;
+            }
         }
 
-        export class Actor {
-            public readonly position: Symbols.Vector2;
+        export class Actor extends Entity {
+            public readonly sprite: Sprite;
+
+            public constructor(position, size, sprite) {
+                super(position, size);
+
+                this.sprite = sprite;
+            }
         }
 
-        export class Tile {
-            public readonly position: Symbols.Vector2;
-            public readonly size: Symbols.Vector2;
+        export class Tile extends Entity {
+            public readonly sprite: Sprite;
+
+            public constructor(position, size, sprite) {
+                super(position, size);
+
+                this.sprite = sprite;
+            }
         }
 
         export class Room {
             private tiles: Tile[][];
-            
-            public readonly size: Symbols.Vector2;
+
+            public readonly width: number;
+            public readonly height: number;
 
             public constructor(width, height) {
-                this.size.x = width;
-                this.size.y = height;
+                this.width = width;
+                this.height = height;
 
                 this.tiles = [];
 
@@ -59,17 +77,9 @@ namespace Retkit {
                     this.tiles[i] = [];
 
                     for (var j = 0; j < height; j++) {
-                        this.tiles[i][j] = new Tile();
+                        this.tiles[i][j] = null;
                     }
                 }
-            }
-
-            public get width() {
-                return this.size.x;
-            }
-
-            public get height() {
-                return this.size.x;
             }
 
             public getTile(x, y) {
@@ -86,6 +96,48 @@ namespace Retkit {
                 }
 
                 this.tiles[x][y] = tile;
+            }
+        }
+
+        export class Sprite {
+            public position: Vector2;
+            public offset: Vector2;
+            public size: Vector2;
+            public texels: Vector2[];
+            public color: Vector3;
+
+            public constructor(position, offset, size, texelTL, texelDR, color) {
+                this.position = position;
+                this.offset = offset;
+                this.size = size;
+
+                this.texels = [];
+                this.texels[0] = texelTL;
+                this.texels[1] = texelDR;
+
+                this.color = color;
+            }
+        }
+
+        export class Vector2 {
+            public x: number;
+            public y: number;
+
+            public constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        export class Vector3 {
+            public x: number;
+            public y: number;
+            public z: number;
+
+            public constructor(x, y, z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
             }
         }
     }
@@ -519,13 +571,22 @@ namespace Retkit {
 
                 this.usedIndices += 6;
             }
-        }
-    }
 
-    export namespace Symbols {
-        export class Vector2 {
-            public x: number;
-            public y: number;
+            public addSprite(sprite: Game.Sprite) {
+                let x = sprite.position.x + sprite.offset.x,
+                    y = sprite.position.y + sprite.offset.y,
+                    w = sprite.size.x,
+                    h = sprite.size.y,
+                    ua = sprite.texels[0].x,
+                    va = sprite.texels[0].y,
+                    ub = sprite.texels[1].x,
+                    vb = sprite.texels[1].y,
+                    r = sprite.color.x,
+                    g = sprite.color.y,
+                    b = sprite.color.z;
+
+                this.addQuad(x, y, w, h, ua, va, ub, vb, r, g, b);
+            }
         }
     }
 }
