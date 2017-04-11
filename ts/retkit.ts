@@ -173,7 +173,7 @@ namespace Retkit {
             this.canvas.style.width = (this.width * this.scale) + 'px';
             this.canvas.style.height = (this.height * this.scale) + 'px';
 
-            this.renderer.resize(width, height);
+            this.renderer.resizeViewport(width, height);
         }
 
         public appendCanvasTo(element: HTMLElement) {
@@ -188,8 +188,8 @@ namespace Retkit {
     export class Renderer {
         private webGLContext: WebGLRenderingContext;
 
-        public width: number;
-        public height: number;
+        public viewportWidth: number;
+        public viewportHeight: number;
 
         private boundTexture: WebGLTexture;
         private boundFramebuffer: WebGLFramebuffer;
@@ -203,9 +203,16 @@ namespace Retkit {
             return this.webGLContext;
         }
 
-        public resize(width: number, height: number) {
-            this.width = width;
-            this.height = height;
+        public resizeViewport(width: number, height: number) {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+        }
+
+        public enableAlphaBlending() {
+            let gl = this.webGLContext;
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
         }
 
         public bindTexture(texture: WebGLTexture);
@@ -460,7 +467,7 @@ namespace Retkit {
 
             this.bindProgram(program);
 
-            gl.viewport(0, 0, this.width, this.height);
+            gl.viewport(0, 0, this.viewportWidth, this.viewportHeight);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, batch.vertexBuffer);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, batch.elementBuffer);
@@ -630,10 +637,15 @@ void main() {
 
     retkitRenderer.bindProgram(retkitProgram);
 
+    for (let uniform in retkitProgram.uniforms) {
+        console.log(uniform, retkitProgram.uniforms[uniform]);
+    }
+
+    window['gl'] = retkitRenderer.gl;
+
     retkitRenderer.gl.uniformMatrix4fv(retkitProgram.uniforms['u_Matrix'].location, false, [0.00625, 0, 0, 0, 0, -0.01, 0, 0, 0, 0, -1, 0, -1, 1, -0, 1]);
 
-    retkitRenderer.gl.enable(retkitRenderer.gl.BLEND);
-    retkitRenderer.gl.blendFunc(retkitRenderer.gl.SRC_ALPHA, retkitRenderer.gl.ONE);
+    retkitRenderer.enableAlphaBlending();
 
     let retkitAtlas = retkitRenderer.buildTextureFromSource('./png/atlas.png');
 
@@ -647,7 +659,7 @@ void main() {
         let sprof = (~~(timer * 10) & 1) * 0.25;
 
         retkitBatch.addQuad(0, 64 - Math.abs(Math.sin(timer * 5)) * 32, 32, 32, sprof, 0, sprof + .25, .25, 1, 1, 1);
-        retkitBatch.addQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof + .25, 0, sprof, .25, 2, .5, 2);
+        retkitBatch.addQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof + .25, 0, sprof, .25, 0.2, 1.2, 0.1);
 
         retkitRenderer.flushBatch(retkitBatch);
 
