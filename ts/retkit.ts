@@ -630,7 +630,6 @@ void main() {
 
     retkitRenderer.bindProgram(retkitProgram);
 
-    retkitRenderer.gl.uniform1i(retkitProgram.uniforms['u_Texture'].location, 0);
     retkitRenderer.gl.uniformMatrix4fv(retkitProgram.uniforms['u_Matrix'].location, false, [0.00625, 0, 0, 0, 0, -0.01, 0, 0, 0, 0, -1, 0, -1, 1, -0, 1]);
 
     retkitRenderer.gl.enable(retkitRenderer.gl.BLEND);
