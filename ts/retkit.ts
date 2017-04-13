@@ -105,17 +105,17 @@ namespace Retkit {
             public position: Vector2;
             public offset: Vector2;
             public size: Vector2;
-            public texels: Vector2[];
+            public texelPosition: Vector2;
+            public texelSize: Vector2;
             public color: Vector3;
 
-            public constructor(position, offset, size, texelTL, texelDR, color) {
+            public constructor(position: Vector2, offset: Vector2, size: Vector2, texelPosition: Vector2, texelSize: Vector2, color: Vector3) {
                 this.position = position;
                 this.offset = offset;
                 this.size = size;
 
-                this.texels = [];
-                this.texels[0] = texelTL;
-                this.texels[1] = texelDR;
+                this.texelPosition = texelPosition;
+                this.texelSize = texelSize;
 
                 this.color = color;
             }
@@ -581,7 +581,7 @@ namespace Retkit {
                 this.usedIndices = 0;
             }
 
-            public addQuad(x, y, w, h, ua, va, ub, vb, r, g, b) {
+            public pushQuad(x, y, w, h, ua, va, ub, vb, r, g, b) {
                 let offset = (this.usedIndices / 6) * 28;
 
                 this.vertices.set([x, y + h, r, g, b, ua, vb], offset);
@@ -592,20 +592,20 @@ namespace Retkit {
                 this.usedIndices += 6;
             }
 
-            public addSprite(sprite: Game.Sprite) {
+            public pushSprite(sprite: Game.Sprite) {
                 let x = sprite.position.x + sprite.offset.x,
                     y = sprite.position.y + sprite.offset.y,
                     w = sprite.size.x,
                     h = sprite.size.y,
-                    ua = sprite.texels[0].x,
-                    va = sprite.texels[0].y,
-                    ub = sprite.texels[1].x,
-                    vb = sprite.texels[1].y,
+                    ua = sprite.texelPosition.x,
+                    va = sprite.texelPosition.y,
+                    ub = ua + sprite.texelSize.x,
+                    vb = va + sprite.texelSize.y,
                     r = sprite.color.x,
                     g = sprite.color.y,
                     b = sprite.color.z;
 
-                this.addQuad(x, y, w, h, ua, va, ub, vb, r, g, b);
+                this.pushQuad(x, y, w, h, ua, va, ub, vb, r, g, b);
             }
         }
     }
@@ -660,6 +660,13 @@ void main() {
 
     let retkitBatch = retkitRenderer.buildBatch(4096);
 
+    let retkitPlayerSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(8, 8),
+        new Retkit.Game.Vector2(0, 0),
+        new Retkit.Game.Vector2(32, 32),
+        new Retkit.Game.Vector2(0, 0),
+        new Retkit.Game.Vector2(0.25, 0.25),
+        new Retkit.Game.Vector3(1, 1, 1));
+
     let timer = 0;
 
     retkitGame.run((time, deltaTime) => { timer = time; }, () => {
@@ -668,8 +675,9 @@ void main() {
         let sprof = (~~(timer * 10) & 1) * 0.25;
         let sprof2 = (~~(timer * 6) & 1) * 0.25;
 
-        retkitBatch.addQuad(0, 64 - Math.abs(Math.sin(timer * 5)) * 32, 32, 32, sprof, 0, sprof + .25, .25, 1, 1, 1);
-        retkitBatch.addQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof2 + .25, 0, sprof2, .25, 0.2, 1.2, 0.1);
+        retkitBatch.pushSprite(retkitPlayerSprite);
+        //retkitBatch.pushQuad(0, 64 - Math.abs(Math.sin(timer * 5)) * 32, 32, 32, sprof, 0, sprof + .25, .25, 1, 1, 1);
+        //retkitBatch.pushQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof2 + .25, 0, sprof2, .25, 0.2, 1.2, 0.1);
 
         retkitRenderer.flushBatch(retkitBatch);
 
