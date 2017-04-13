@@ -661,15 +661,21 @@ void main() {
     let retkitBatch = retkitRenderer.buildBatch(4096);
 
     let retkitPlayerSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(8, 8),
-        new Retkit.Game.Vector2(0, 0),
-        new Retkit.Game.Vector2(32, 32),
+        new Retkit.Game.Vector2(32, 0),
+        new Retkit.Game.Vector2(-32, 32),
         new Retkit.Game.Vector2(0, 0),
         new Retkit.Game.Vector2(0.25, 0.25),
         new Retkit.Game.Vector3(1, 1, 1));
 
     let timer = 0;
 
-    retkitGame.run((time, deltaTime) => { timer = time; }, () => {
+    retkitGame.run((time, deltaTime) => {
+        timer = time;
+        let sprof = (~~(timer * 10) & 1) * 0.25;
+        retkitPlayerSprite.position.x += Math.sin(timer * 2) * 2;
+        retkitPlayerSprite.position.y += Math.sin(timer * 5);
+        retkitPlayerSprite.texelPosition.x = sprof;
+    }, () => {
         retkitBatch.usedIndices = 0;
 
         let sprof = (~~(timer * 10) & 1) * 0.25;
