@@ -32,32 +32,40 @@ namespace Retkit {
 
     export namespace Game {
         export class Entity {
-            public readonly position: Vector2;
-            public readonly size: Vector2;
+            public readonly collider: Collider;
 
-            public constructor(position, size) {
-                this.position = position;
-                this.size = size;
+            public constructor(collider) {
+                this.collider = collider;
             }
         }
 
         export class Actor extends Entity {
             public readonly sprite: Sprite;
 
-            public constructor(position, size, sprite) {
-                super(position, size);
+            public constructor(collider, sprite) {
+                super(collider);
 
                 this.sprite = sprite;
+            }
+            
+            public synchroniseSprite() {
+                this.sprite.position.x = this.collider.position.x;
+                this.sprite.position.y = this.collider.position.y;
             }
         }
 
         export class Tile extends Entity {
             public readonly sprite: Sprite;
 
-            public constructor(position, size, sprite) {
-                super(position, size);
+            public constructor(collider, sprite) {
+                super(collider);
 
                 this.sprite = sprite;
+            }
+            
+            public synchroniseSprite() {
+                this.sprite.position.x = this.collider.position.x;
+                this.sprite.position.y = this.collider.position.y;
             }
         }
 
@@ -121,11 +129,95 @@ namespace Retkit {
             }
         }
 
+        export class Collider {
+            public readonly position: Vector2;
+            public readonly size: Vector2;
+
+            public constructor(position: Vector2, size: Vector2) {
+                this.position = position;
+                this.size = size;
+            }
+
+            public sweepX(motion: number, collider: Collider): number {
+                let entryTime = 1;
+
+                if (this.position.y < (collider.position.y + collider.size.y) && (this.position.y + this.size.y) > collider.position.y) {
+                    if (motion > 0) {
+                        let perEntryTime = (-this.position.x - this.size.x + collider.position.x) / motion;
+
+                        if (perEntryTime >= 0 && perEntryTime < 1) {
+                            entryTime = perEntryTime;
+                        }
+                    } else if (motion < 0) {
+                        let perEntryTime = (-this.position.x + collider.position.x + collider.size.x) / motion;
+
+                        if (perEntryTime >= 0 && perEntryTime < 1) {
+                            entryTime = perEntryTime;
+                        }
+                    }
+                }
+
+                return entryTime;
+            }
+
+            public sweepY(motion: number, collider: Collider): number {
+                let entryTime = 1;
+
+                if (this.position.x < (collider.position.x + collider.size.x) && (this.position.x + this.size.x) > collider.position.x) {
+                    if (motion > 0) {
+                        let perEntryTime = (-this.position.y - this.size.y + collider.position.y) / motion;
+
+                        if (perEntryTime >= 0 && perEntryTime < 1) {
+                            entryTime = perEntryTime;
+                        }
+                    } else if (motion < 0) {
+                        let perEntryTime = (-this.position.y + collider.position.y + collider.size.y) / motion;
+
+                        if (perEntryTime >= 0 && perEntryTime < 1) {
+                            entryTime = perEntryTime;
+                        }
+                    }
+                }
+
+                return entryTime;
+            }
+
+            public move(motion: Vector2, colliders: Collider[]) {
+                let entryTimeX = 1;
+
+                for (var i = 0; i < colliders.length; i++) {
+                    let collider = colliders[i];
+
+                    let perEntryTime = this.sweepX(motion.x, collider);
+
+                    if (perEntryTime < entryTimeX) {
+                        entryTimeX = perEntryTime;
+                    }
+                }
+
+                this.position.x += motion.x * entryTimeX;
+
+                let entryTimeY = 1;
+
+                for (var i = 0; i < colliders.length; i++) {
+                    let collider = colliders[i];
+
+                    let perEntryTime = this.sweepY(motion.y, collider);
+
+                    if (perEntryTime < entryTimeY) {
+                        entryTimeY = perEntryTime;
+                    }
+                }
+
+                this.position.y += motion.y * entryTimeY;
+            }
+        }
+
         export class Vector2 {
             public x: number;
             public y: number;
 
-            public constructor(x, y) {
+            public constructor(x: number, y: number) {
                 this.x = x;
                 this.y = y;
             }
@@ -136,7 +228,7 @@ namespace Retkit {
             public y: number;
             public z: number;
 
-            public constructor(x, y, z) {
+            public constructor(x: number, y: number, z: number) {
                 this.x = x;
                 this.y = y;
                 this.z = z;
@@ -214,7 +306,7 @@ namespace Retkit {
             let gl = this.gl;
 
             gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         }
 
         public bindTexture(texture: Renderer.Texture) {
@@ -626,6 +718,8 @@ function main() {
 
     let retkitRenderer = retkitCanvas.renderer;
 
+    window['gl'] = retkitRenderer.gl;
+
     let retkitProgram = retkitRenderer.buildProgramFromSources(
         `attribute vec2 a_Position;
 attribute vec3 a_Color;
@@ -655,8 +749,6 @@ void main() {
 
     retkitRenderer.bindProgram(retkitProgram);
 
-    window['gl'] = retkitRenderer.gl;
-
     retkitRenderer.setProgramUniform(retkitProgram.uniforms['u_Matrix'], [0.00625, 0, 0, 0, 0, -0.01, 0, 0, 0, 0, -1, 0, -1, 1, -0, 1]);
 
     retkitRenderer.enableAlphaBlending();
@@ -665,23 +757,43 @@ void main() {
 
     let retkitBatch = retkitRenderer.buildBatch(4096);
 
-    let retkitPlayerSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(8, 8),
-        new Retkit.Game.Vector2(32, 0),
-        new Retkit.Game.Vector2(-32, 32),
+    let retkitPlayerCollider = new Retkit.Game.Collider(new Retkit.Game.Vector2(32, 32), new Retkit.Game.Vector2(16, 16));
+
+    let retkitPlayerSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(0, 0),
+        new Retkit.Game.Vector2(0, 0),
+        new Retkit.Game.Vector2(16, 16),
         new Retkit.Game.Vector2(0, 0),
         new Retkit.Game.Vector2(0.25, 0.25),
         new Retkit.Game.Vector3(1, 1, 1));
 
-    let timer = 0;
+    let retkitPlayer = new Retkit.Game.Actor(retkitPlayerCollider, retkitPlayerSprite);
+
+    let retkitTileCollider = new Retkit.Game.Collider(new Retkit.Game.Vector2(96, 32), new Retkit.Game.Vector2(16, 16));
+
+    let retkitTileSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(0, 0),
+        new Retkit.Game.Vector2(0, 0),
+        new Retkit.Game.Vector2(16, 16),
+        new Retkit.Game.Vector2(0, 0.5),
+        new Retkit.Game.Vector2(0.25, 0.25),
+        new Retkit.Game.Vector3(1, 1, 1));
+
+    let retkitTile = new Retkit.Game.Tile(retkitTileCollider, retkitTileSprite);
+
+    let retkitTileColliders = [retkitTileCollider];
 
     retkitGame.run((time, deltaTime) => {
-        timer = time;
-        let sprof = (~~(timer * 10) & 1) * 0.25;
-        retkitPlayerSprite.position.x += Math.sin(timer * 2) * 2;
-        retkitPlayerSprite.position.y += Math.sin(timer * 5);
+        let sprof = (~~(time * 10) & 1) * 0.25;
+
+        retkitPlayerCollider.move(new Retkit.Game.Vector2(Math.sin(time * 4) * 2, Math.sin(time + 1) / 2), retkitTileColliders);
+
         retkitPlayerSprite.texelPosition.x = sprof;
+        
+        retkitPlayer.synchroniseSprite();
+
+        retkitTile.synchroniseSprite();
     }, () => {
         retkitBatch.pushSprite(retkitPlayerSprite);
+        retkitBatch.pushSprite(retkitTileSprite);
 
         retkitRenderer.flushBatch(retkitBatch);
         retkitRenderer.drawBatch(retkitBatch, retkitProgram, null, retkitAtlas);
