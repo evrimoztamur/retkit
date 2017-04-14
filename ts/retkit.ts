@@ -471,6 +471,9 @@ namespace Retkit {
         public flushBatch(batch: Renderer.Batch) {
             let gl = this.gl;
 
+            batch.flushedIndices = batch.pushedIndices;
+            batch.pushedIndices = 0;
+
             gl.bindBuffer(gl.ARRAY_BUFFER, batch.vertexBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, batch.vertices, gl.DYNAMIC_DRAW);
         }
@@ -489,7 +492,7 @@ namespace Retkit {
             this.bindFramebuffer(framebuffer);
             this.bindTexture(texture);
 
-            gl.drawElements(gl.TRIANGLES, batch.usedIndices, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, batch.flushedIndices, gl.UNSIGNED_SHORT, 0);
         }
     }
 
@@ -570,7 +573,8 @@ namespace Retkit {
             public readonly vertices: Float32Array;
             public readonly length: number;
 
-            public usedIndices: number;
+            public pushedIndices: number;
+            public flushedIndices: number;
 
             public constructor(vertexBuffer: WebGLBuffer, elementBuffer: WebGLBuffer, vertices: Float32Array, length: number) {
                 this.vertexBuffer = vertexBuffer;
@@ -578,18 +582,19 @@ namespace Retkit {
                 this.vertices = vertices;
                 this.length = length;
 
-                this.usedIndices = 0;
+                this.pushedIndices = 0;
+                this.flushedIndices = 0;
             }
 
             public pushQuad(x, y, w, h, ua, va, ub, vb, r, g, b) {
-                let offset = (this.usedIndices / 6) * 28;
+                let offset = (this.pushedIndices / 6) * 28;
 
                 this.vertices.set([x, y + h, r, g, b, ua, vb], offset);
                 this.vertices.set([x + w, y + h, r, g, b, ub, vb], offset + 7);
                 this.vertices.set([x + w, y, r, g, b, ub, va], offset + 14);
                 this.vertices.set([x, y, r, g, b, ua, va], offset + 21);
 
-                this.usedIndices += 6;
+                this.pushedIndices += 6;
             }
 
             public pushSprite(sprite: Game.Sprite) {
@@ -676,17 +681,9 @@ void main() {
         retkitPlayerSprite.position.y += Math.sin(timer * 5);
         retkitPlayerSprite.texelPosition.x = sprof;
     }, () => {
-        retkitBatch.usedIndices = 0;
-
-        let sprof = (~~(timer * 10) & 1) * 0.25;
-        let sprof2 = (~~(timer * 6) & 1) * 0.25;
-
         retkitBatch.pushSprite(retkitPlayerSprite);
-        //retkitBatch.pushQuad(0, 64 - Math.abs(Math.sin(timer * 5)) * 32, 32, 32, sprof, 0, sprof + .25, .25, 1, 1, 1);
-        //retkitBatch.pushQuad(64, 64 - Math.abs(Math.cos(timer * 3)) * 16, 32, 32, sprof2 + .25, 0, sprof2, .25, 0.2, 1.2, 0.1);
 
         retkitRenderer.flushBatch(retkitBatch);
-
         retkitRenderer.drawBatch(retkitBatch, retkitProgram, null, retkitAtlas);
     });
 }
