@@ -47,7 +47,7 @@ namespace Retkit {
 
                 this.sprite = sprite;
             }
-            
+
             public synchroniseSprite() {
                 this.sprite.position.x = this.collider.position.x;
                 this.sprite.position.y = this.collider.position.y;
@@ -62,7 +62,7 @@ namespace Retkit {
 
                 this.sprite = sprite;
             }
-            
+
             public synchroniseSprite() {
                 this.sprite.position.x = this.collider.position.x;
                 this.sprite.position.y = this.collider.position.y;
@@ -221,6 +221,16 @@ namespace Retkit {
                 this.x = x;
                 this.y = y;
             }
+
+            public setByValue(x: number, y: number) {
+                this.x = x;
+                this.y = y;
+            }
+
+            public set(vector: Vector2) {
+                this.x = vector.x;
+                this.y = vector.y;
+            }
         }
 
         export class Vector3 {
@@ -233,49 +243,63 @@ namespace Retkit {
                 this.y = y;
                 this.z = z;
             }
+
+            public setByValue(x: number, y: number, z: number) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+
+            public set(vector: Vector3) {
+                this.x = vector.x;
+                this.y = vector.y;
+                this.z = vector.z;
+            }
         }
     }
 
     export class Canvas {
-        private readonly canvas: HTMLCanvasElement;
+        public readonly canvasElement: HTMLCanvasElement;
         public readonly renderer: Renderer;
 
-        private scale: number;
+        public scale: number;
 
         public constructor(width: number, height: number, scale: number) {
-            this.canvas = document.createElement('canvas');
+            this.canvasElement = document.createElement('canvas');
 
-            this.renderer = new Renderer(this.canvas.getContext('webgl', { antialias: false }));
+            this.canvasElement.tabIndex = 1;
+
+            this.renderer = new Renderer(this.canvasElement.getContext('webgl', { antialias: false }));
 
             this.resize(width, height, scale);
         }
 
-        private get width() {
-            return this.canvas.width;
+        public get width() {
+            return this.canvasElement.width;
         }
 
-        private get height() {
-            return this.canvas.height;
+        public get height() {
+            return this.canvasElement.height;
         }
 
         public resize(width: number, height: number, scale: number) {
             this.scale = scale;
 
-            this.canvas.width = width;
-            this.canvas.height = height;
+            this.canvasElement.width = width;
+            this.canvasElement.height = height;
 
-            this.canvas.style.width = (this.width * this.scale) + 'px';
-            this.canvas.style.height = (this.height * this.scale) + 'px';
+            this.canvasElement.style.width = (this.width * this.scale) + 'px';
+            this.canvasElement.style.height = (this.height * this.scale) + 'px';
 
             this.renderer.resizeViewport(width, height);
         }
 
         public appendCanvasTo(element: HTMLElement) {
-            element.appendChild(this.canvas);
+            element.appendChild(this.canvasElement);
         }
 
         public setCanvasID(id: string) {
-            this.canvas.id = id;
+            this.canvasElement.id = id;
         }
     }
 
@@ -706,6 +730,142 @@ namespace Retkit {
             }
         }
     }
+
+    export class Input {
+        private canvas: Canvas;
+
+        private coreFocused: boolean;
+
+        private coreRealCursor: Game.Vector2;
+        private coreCursor: Game.Vector2;
+
+        private coreButtons: boolean[];
+
+        private coreKeys: Object;
+
+        public cursor: Game.Vector2;
+        public deltaCursor: Game.Vector2;
+
+        public buttons: boolean[];
+        public buttonsClicked: boolean[];
+
+        public keys: Object;
+        public keysPressed: Object;
+
+        public constructor(canvas: Canvas) {
+            this.canvas = canvas;
+
+            this.coreFocused = false;
+
+            this.coreRealCursor = new Game.Vector2(0, 0);
+            this.coreCursor = new Game.Vector2(0, 0);
+
+            this.coreButtons = [];
+
+            this.coreKeys = {};
+
+            this.cursor = new Game.Vector2(0, 0);
+            this.deltaCursor = new Game.Vector2(0, 0);
+
+            this.buttons = [];
+            this.buttonsClicked = [];
+
+            this.keys = {};
+            this.keysPressed = {};
+
+            this.addListenersTo(canvas.canvasElement);
+        }
+
+        private addListenersTo(element: HTMLElement) {
+            let self = this;
+
+            element.addEventListener('mousedown', function (event) {
+                if (self.coreFocused) {
+                    self.coreButtons[event.button] = true;
+                } else {
+                    element.requestPointerLock();
+                }
+            });
+
+            element.addEventListener('mouseup', function (event) {
+                if (self.coreFocused) {
+                    self.coreButtons[event.button] = false;
+                }
+            });
+
+            element.addEventListener('mousemove', function (event) {
+                if (self.coreFocused) {
+                    self.coreRealCursor.x += event.movementX;
+                    self.coreRealCursor.y += event.movementY;
+
+                    self.coreRealCursor.x = Math.min(Math.max(self.coreRealCursor.x, 0), self.canvas.width);
+                    self.coreRealCursor.y = Math.min(Math.max(self.coreRealCursor.y, 0), self.canvas.height - 1);
+
+                    self.coreCursor.x = Math.floor(self.coreRealCursor.x / self.canvas.scale);
+                    self.coreCursor.y = Math.floor(self.coreRealCursor.y / self.canvas.scale);
+                }
+            });
+
+            element.addEventListener('keydown', function (event) {
+                if (self.coreFocused) {
+                    event.preventDefault();
+
+                    self.coreKeys[event.key] = true;
+                }
+            });
+
+            element.addEventListener('keyup', function (event) {
+                if (self.coreFocused) {
+                    event.preventDefault();
+
+                    self.coreKeys[event.key] = false;
+                }
+            });
+
+            element.addEventListener('pointerlockchange', function () {
+                self.coreFocused = document.pointerLockElement === element;
+
+                if (self.coreFocused) {
+                    self.canvas.canvasElement.focus();
+                } else {
+                    self.canvas.canvasElement.blur();
+                }
+            });
+        }
+
+        private updateCursor() {
+            let oldCursor = new Game.Vector2(this.cursor.x, this.cursor.y);
+
+            this.cursor.set(this.coreCursor);
+            this.deltaCursor.setByValue(this.cursor.x - oldCursor.x, this.cursor.y - oldCursor.y);
+        }
+
+        private updateButtons() {
+            let oldButtons = this.buttons;
+            let newButtons = this.coreButtons;
+
+            for (var button in newButtons) {
+                this.buttonsClicked[button] = newButtons[button] && !oldButtons[button];
+                this.buttons[button] = newButtons[button];
+            }
+        }
+
+        private updateKeys() {
+            let oldKeys = this.keys;
+            let newKeys = this.coreKeys;
+
+            for (var key in newKeys) {
+                this.keysPressed[key] = newKeys[key] && !oldKeys[key];
+                this.keys[key] = newKeys[key];
+            }
+        }
+
+        public process() {
+            this.updateCursor();
+            this.updateButtons();
+            this.updateKeys();
+        }
+    }
 }
 
 function main() {
@@ -715,6 +875,8 @@ function main() {
 
     retkitCanvas.setCanvasID('testbed-canvas');
     retkitCanvas.appendCanvasTo(document.body);
+
+    let retkitInput = new Retkit.Input(retkitCanvas);
 
     let retkitRenderer = retkitCanvas.renderer;
 
@@ -757,7 +919,7 @@ void main() {
 
     let retkitBatch = retkitRenderer.buildBatch(4096);
 
-    let retkitPlayerCollider = new Retkit.Game.Collider(new Retkit.Game.Vector2(32, 32), new Retkit.Game.Vector2(16, 16));
+    let retkitPlayerCollider = new Retkit.Game.Collider(new Retkit.Game.Vector2(32, 16), new Retkit.Game.Vector2(16, 16));
 
     let retkitPlayerSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(0, 0),
         new Retkit.Game.Vector2(0, 0),
@@ -769,6 +931,7 @@ void main() {
     let retkitPlayer = new Retkit.Game.Actor(retkitPlayerCollider, retkitPlayerSprite);
 
     let retkitTileCollider = new Retkit.Game.Collider(new Retkit.Game.Vector2(96, 32), new Retkit.Game.Vector2(16, 16));
+    let retkitTileCollider2 = new Retkit.Game.Collider(new Retkit.Game.Vector2(80, 48), new Retkit.Game.Vector2(16, 16));
 
     let retkitTileSprite = new Retkit.Game.Sprite(new Retkit.Game.Vector2(0, 0),
         new Retkit.Game.Vector2(0, 0),
@@ -779,15 +942,17 @@ void main() {
 
     let retkitTile = new Retkit.Game.Tile(retkitTileCollider, retkitTileSprite);
 
-    let retkitTileColliders = [retkitTileCollider];
+    let retkitTileColliders = [retkitTileCollider, retkitTileCollider2];
 
     retkitGame.run((time, deltaTime) => {
+        retkitInput.process();
+
         let sprof = (~~(time * 10) & 1) * 0.25;
 
         retkitPlayerCollider.move(new Retkit.Game.Vector2(Math.sin(time * 4) * 2, Math.sin(time + 1) / 2), retkitTileColliders);
 
         retkitPlayerSprite.texelPosition.x = sprof;
-        
+
         retkitPlayer.synchroniseSprite();
 
         retkitTile.synchroniseSprite();
