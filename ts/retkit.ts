@@ -267,7 +267,7 @@ namespace Retkit {
         public constructor(width: number, height: number, scale: number) {
             this.canvasElement = document.createElement('canvas');
 
-            this.canvasElement.tabIndex = 1;
+            this.canvasElement.tabIndex = -1;
 
             this.renderer = new Renderer(this.canvasElement.getContext('webgl', { antialias: false }));
 
